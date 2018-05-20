@@ -1,0 +1,12 @@
+Run
+
+```
+$ make
+```
+
+followed by 
+
+```
+$ sudo python run_my.py --config config.json
+$ less data/output/mr.result.wordcount
+```
