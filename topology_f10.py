@@ -8,8 +8,7 @@ import sys
 
 from collections import defaultdict
 from subprocess import Popen
-import matplotlib
-matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt 
 
 RNG_SEED = 0xBAEF
@@ -74,5 +73,3 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
                         pass
                         #add
 
-    nx.draw(G)
-    plt.draw()
