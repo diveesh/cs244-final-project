@@ -33,7 +33,7 @@ from pox.lib.addresses import IPAddr
 
 log = core.getLogger()
 
-topo = pickle.load('/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle')
+topo = pickle.load(open('/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle'))
 
 class TopoSwitch (object):
   """
@@ -105,12 +105,7 @@ class TopoSwitch (object):
       return
 
     packet_in = event.ofp # The actual ofp_packet_in message.
-
-    # Comment out the following line and uncomment the one after
-    # when starting the exercise.
-    print "Src: " + str(packet.src)
-    print "Dest: " + str(packet.dst)
-    print "Event port: " + str(event.port)
+    log.info("hello!!!!")
 
     # log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
 
