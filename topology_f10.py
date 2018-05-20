@@ -39,6 +39,8 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
 
     open_ports = [k] * total_switches
 
+    topo["n_switches"] = total_switches 
+
     #likely only works for L=2
     for i in range(L, -1, -1):
         num_groups = 2 * p ** (L - i)

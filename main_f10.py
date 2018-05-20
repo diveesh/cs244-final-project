@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate F10 tops.")
     parser.add_argument('--pickle', help='Topology pickle output path', default=None)
     args = parser.parse_args()
-    topo = generate_topology(n_servers=144, k=12, L=2)
+    topo = generate_topology(n_servers=16, k=4, L=2)
     if args.pickle:
         with open(args.pickle, 'wb') as f:
             pickle.dump(topo, f)
