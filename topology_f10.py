@@ -25,10 +25,14 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
     G = nx.Graph()
     topo = {}
     outport_mappings = {}
+    switch_to_ip = {}
+    host_to_ip = {}
     topo["graph"] = G
     topo["n_ports"] = k
     topo["n_hosts"] = n_servers
     topo["outport_mappings"] = outport_mappings
+    topo["switch_to_ip"] = switch_to_ip
+    topo["host_to_ip"] = host_to_ip
 
     p = k / 2
 
@@ -48,7 +52,7 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
         for c in range(num_servers_per_switch):
             ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
             host_num = loc * num_servers_per_switch + c
-            print host_num, ip
+            host_to_ip[host_num] = ip
             G.add_node('h'+str(host_num), ip=ip) #naming scheme
 
     print 'switches'
@@ -62,7 +66,7 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
             for j in range(n_switches_per_layer / 2): # for each switch on L2
                 switch_num = i * num_groups * num_switches_per_group + j
                 ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | i << 8 | j))
-                print switch_num, ip
+                switch_to_ip['s' + str(switch_num)] = ip
                 G.add_node('s' + str(switch_num), ip=ip)
         else:
             for m in range(num_groups): # group num
@@ -70,7 +74,7 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
                     switch_num = i * num_groups * num_switches_per_group + m * num_switches_per_group + j
                     loc = m * p ** i
                     ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | i << 8 | j))
-                    print switch_num, ip
+                    switch_to_ip['s' + str(switch_num)] = ip
                     G.add_node('s' + str(switch_num), ip=ip) #update naming scheme once figured
 
                     if i == 0: # from L0 to servers

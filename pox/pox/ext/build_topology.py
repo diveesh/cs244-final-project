@@ -14,7 +14,10 @@ from subprocess import Popen
 from time import sleep, time
 import pickle
 
-pkl = '/home/diveesh/cs244-final-project/poxStartup/pox/pox/ext/small_topo.pickle'
+pkl = '/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle'
+
+def mac_from_value(v):
+    return ':'.join(s.encode('hex') for s in ('%0.12x' % v).decode('hex'))
 
 class JellyFishTop(Topo):
     ''' TODO, build your topology here'''
@@ -34,7 +37,12 @@ class JellyFishTop(Topo):
 
         self.mn_switches = []
         for s in range(topo['n_switches']):
-            self.mn_switches.append(self.addSwitch('s' + str(s + 1), mac="00:00:00:00:00:" + str("{:02x}".format(s + 1))))
+            nodes_from_graph = topo['graph'].nodes(data='ip')
+            for node in nodes_from_graph:
+                if node[0] == 's' + str(s):
+                    break
+            print node
+            self.mn_switches.append(self.addSwitch('s' + str(s + 1), mac="00:00:00:00:00:" + str("{:02x}".format(s + 1)), ip=node[1]))
 
         for e in topo['graph'].edges():
             if e[0][0] == 'h':
@@ -58,7 +66,7 @@ class JellyFishTop(Topo):
             port1 = outport_mappings[(f1_graph, f2_graph)]
             port2 = outport_mappings[(f2_graph, f1_graph)]
 
-            self.addLink(f1, f2, bw=5, port1=port1, port2=port2, use_htb=True)
+            self.addLink(f1, f2, port1=port1, port2=port2, use_htb=True)
 
         self.topo = topo
 
@@ -69,10 +77,24 @@ def experiment(net):
         net.stop()
 
 def main():
-	topo = JellyFishTop()
-	net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX)
-	experiment(net)
+    topo = JellyFishTop()
+    net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX)
+
+    host_to_ip = topo.topo['host_to_ip']
+
+    host_mac_base = len(topo.mn_switches)
+    for i, h in enumerate(topo.mn_hosts):
+        mn_host = net.getNodeByName(h)
+        print h, mac_from_value(host_mac_base + i + 1)
+        mn_host.setMAC(mac_from_value(host_mac_base + i + 1))
+        for j, h2 in enumerate(topo.mn_hosts):
+            if i == j: continue
+            mn_host2 = net.getNodeByName(h2)
+            # print "Setting arp for host " + str(h) + ", index " + str(i) + ". j " + str(j) + ", mac is " + mac_from_value(host_mac_base + j + 1)
+            mn_host.setARP(host_to_ip[j], mac_from_value(host_mac_base + j + 1))
+
+    experiment(net)
 
 if __name__ == "__main__":
-	main()
+    main()
 

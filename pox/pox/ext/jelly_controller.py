@@ -23,27 +23,35 @@ It's roughly similar to the one Brandon Heller did for NOX.
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
+import pox.proto.arp_responder as arp
+import pickle
+import time
+import networkx as nx
+from itertools import islice
+import pox.openflow.spanning_tree as st
+from pox.lib.addresses import IPAddr
 
 log = core.getLogger()
 
+topo = pickle.load('/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle')
 
-
-class Tutorial (object):
+class TopoSwitch (object):
   """
   A Tutorial object is created for each switch that connects.
   A Connection object for that switch is passed to the __init__ function.
   """
-  def __init__ (self, connection):
+  def __init__ (self, connection, dpid):
     # Keep track of the connection to the switch so that we can
     # send it messages!
     self.connection = connection
-
+    self.graph_name = 's' + str(int(dpid) - 1)
+    # self.TOPO = topo
+    # self.ip = topo['switch_to_ip'][self.graph_name]
     # This binds our PacketIn event listener
     connection.addListeners(self)
 
     # Use this table to keep track of which ethernet address is on
     # which switch port (keys are MACs, values are ports).
-    self.mac_to_port = {}
 
 
   def resend_packet (self, packet_in, out_port):
@@ -83,40 +91,7 @@ class Tutorial (object):
     Implement switch-like behavior.
     """
 
-    """ # DELETE THIS LINE TO START WORKING ON THIS (AND THE ONE BELOW!) #
-
-    # Here's some psuedocode to start you off implementing a learning
-    # switch.  You'll need to rewrite it as real Python code.
-
-    # Learn the port for the source MAC
-    self.mac_to_port ... <add or update entry>
-
-    if the port associated with the destination MAC of the packet is known:
-      # Send packet out the associated port
-      self.resend_packet(packet_in, ...)
-
-      # Once you have the above working, try pushing a flow entry
-      # instead of resending the packet (comment out the above and
-      # uncomment and complete the below.)
-
-      log.debug("Installing flow...")
-      # Maybe the log statement should have source/destination/port?
-
-      #msg = of.ofp_flow_mod()
-      #
-      ## Set fields to match received packet
-      #msg.match = of.ofp_match.from_packet(packet)
-      #
-      #< Set other fields of flow_mod (timeouts? buffer_id?) >
-      #
-      #< Add an output action, and send -- similar to resend_packet() >
-
-    else:
-      # Flood the packet out everything but the input port
-      # This part looks familiar, right?
-      self.resend_packet(packet_in, of.OFPP_ALL)
-
-    """ # DELETE THIS LINE TO START WORKING ON THIS #
+    pass
 
 
   def _handle_PacketIn (self, event):
@@ -136,9 +111,22 @@ class Tutorial (object):
     print "Src: " + str(packet.src)
     print "Dest: " + str(packet.dst)
     print "Event port: " + str(event.port)
-    self.act_like_hub(packet, packet_in)
-    log.info("packet in")
-    #self.act_like_switch(packet, packet_in)
+
+    # log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
+
+    # ipv4 = packet.find('ipv4')
+    #   if ipv4 is not None:
+    #     log.info("just the ping case")
+    #     srcip = ipv4.srcip
+    #     dstip = ipv4.dstip
+    #     hosts = self.TOPO['graph'].nodes(data='ip')
+    #     for host in hosts:
+    #       if host[1] == srcip:
+    #         srchost = host[0]
+    #       if host[1] == dstip:
+    #         dsthost = host[0]
+    #     log.info("src host: " + str(srchost) + ", dsthost: " + str(dsthost))
+    #     self.act_like_switch(packet, packet_in, event, srchost, dsthost, ipv4.id)
 
 
 
@@ -146,7 +134,10 @@ def launch ():
   """
   Starts the component
   """
+
   def start_switch (event):
-    log.debug("Controlling %s" % (event.connection,))
-    Tutorial(event.connection)
+    log.info("Controlling %s" % (event.connection,))
+    log.info("DPID is "  + str(event.dpid))
+    TopoSwitch(event.connection, event.dpid)
+
   core.openflow.addListenerByName("ConnectionUp", start_switch)
