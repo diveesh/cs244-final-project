@@ -41,6 +41,7 @@ class TopoSwitch (object):
     self.TOPO = topo
     self.ip = topo['switch_to_ip'][self.graph_name]
 
+    log.info("Switch " + self.graph_name + " set up...")
     connection.addListeners(self)
 
 
@@ -75,11 +76,13 @@ class TopoSwitch (object):
 
     ip_val = ip_to_val(self.ip)
     lvl, idx, loc = level(ip_val), index(ip_val), location(ip_val)
-    log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
-    log.info("level: %d index: %d location: %s" % (lvl, idx, bin(loc)))
+    # log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
+    # log.info("level: %d index: %d location: %s" % (lvl, idx, bin(loc)))
 
     ipv4 = packet.find('ipv4')
     if ipv4 is not None:
+      log.info("")
+      log.info("SWITCH " + self.graph_name + ": " + str(ipv4))
 
       dstip = ipv4.dstip
       srcip = ipv4.srcip
@@ -112,9 +115,8 @@ class TopoSwitch (object):
                 if (location(ip_to_val(v)) >> (b * (lvl - 1))) == next_prefix:
                     out_port = self.TOPO['outport_mappings'][(self.graph_name, k)]
                     log.info("routing down to switch %s out of port %s" % (k, out_port))
+                    self.resend_packet(packet_in, out_port)
                     break
-
-            self.resend_packet(packet_in, out_port)
 
       else: # route upwards
         log.info("routing upwards from level %d to level %d" % (lvl, lvl + 1))

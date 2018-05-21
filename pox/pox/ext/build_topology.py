@@ -11,6 +11,7 @@ from mininet.node import OVSController
 from mininet.node import Controller
 from mininet.node import RemoteController
 from mininet.cli import CLI
+from mininet.util import dumpNetConnections
 sys.path.append("../../")
 from pox.ext.jelly_pox import JELLYPOX
 from subprocess import Popen
@@ -92,6 +93,7 @@ def main(p):
             # print "Setting arp for host " + str(h) + ", index " + str(i) + ". j " + str(j) + ", mac is " + mac_from_value(host_mac_base + j + 1)
             mn_host.setARP(host_to_ip[j], mac_from_value(host_mac_base + j + 1))
 
+    dumpNetConnections(net)
     experiment(net)
 
 
