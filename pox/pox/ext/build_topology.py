@@ -1,5 +1,7 @@
 import argparse
 import os
+import pickle
+import subprocess
 import sys
 from mininet.topo import Topo
 from mininet.net import Mininet
@@ -13,24 +15,23 @@ sys.path.append("../../")
 from pox.ext.jelly_pox import JELLYPOX
 from subprocess import Popen
 from time import sleep, time
-import pickle
 
 def mac_from_value(v):
     return ':'.join(s.encode('hex') for s in ('%0.12x' % v).decode('hex'))
 
-class JellyFishTop(Topo):
+class F10Top(Topo):
 
     def build(self, pkl):
         topo = pickle.load(open(pkl, 'r'))
         outport_mappings = topo['outport_mappings']
-        print outport_mappings
+        # print outport_mappings
         self.mn_hosts = []
         for h in range(topo['n_hosts']):
             hosts_from_graph = topo['graph'].nodes(data='ip')
             for host in hosts_from_graph:
                 if host[0] == 'h' + str(h):
                     break
-            print host
+            # print host
             self.mn_hosts.append(self.addHost('h' + str(h), ip=host[1]))
 
         self.mn_switches = []
@@ -39,7 +40,7 @@ class JellyFishTop(Topo):
             for node in nodes_from_graph:
                 if node[0] == 's' + str(s):
                     break
-            print node
+            # print node
             self.mn_switches.append(self.addSwitch('s' + str(s + 1), mac="00:00:00:00:00:" + str("{:02x}".format(s + 1)), ip=node[1]))
 
         for e in topo['graph'].edges():
@@ -75,7 +76,7 @@ def experiment(net):
         net.stop()
 
 def main(p):
-    topo = JellyFishTop(pkl=p)
+    topo = F10Top(pkl=p)
     net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX("jelly", cargs2=("--p=%s" % (p))))
 
     host_to_ip = topo.topo['host_to_ip']
@@ -93,11 +94,23 @@ def main(p):
 
     experiment(net)
 
+
+def cleanmn():
+    sys.stdout.write("Cleaning Mininet...")
+    sys.stdout.flush()
+    FNULL = open(os.devnull, 'w')
+    subprocess.call(["sudo", "mn" , "-c"], stdout=FNULL, stderr=subprocess.STDOUT)
+    sys.stdout.write(" done\n")
+    sys.stdout.flush()
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run F10 topology.")
     parser.add_argument('--pickle', help='Topology pickle input path', default=None)
     args = parser.parse_args()
+
+    cleanmn()
 
     main(args.pickle)
 

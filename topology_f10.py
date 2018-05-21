@@ -36,7 +36,7 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
 
     p = k / 2
 
-    location_bit_length = int(2 * math.ceil(math.log(p))) + 1
+    location_bit_length = int(2 * math.ceil(math.log(p, 2))) + 1
     padding = 16 - location_bit_length
     n_switches_per_layer = 2 * p ** L
     num_servers_per_switch = n_servers / n_switches_per_layer

@@ -1,30 +1,9 @@
-# Copyright 2012 James McCauley
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at:
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""
-This component is for use with the OpenFlow tutorial.
-
-It acts as a simple hub, but can be modified to act like an L2
-learning switch.
-
-It's roughly similar to the one Brandon Heller did for NOX.
-"""
-
+import math
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 import pox.proto.arp_responder as arp
 import pickle
+import random
 import time
 import networkx as nx
 from itertools import islice
@@ -33,67 +12,59 @@ from pox.lib.addresses import IPAddr
 
 log = core.getLogger()
 
+
+def ip_to_val(ip):
+    byte_list = ip.split('.')
+    val = 0
+    for i in range(len(byte_list)):
+        idx = len(byte_list) - i - 1 
+        val |= (int(byte_list[idx]) << (i * 8))
+
+    return val
+
+
+def index(ip_val):
+    return ip_val & 0xff
+
+def level(ip_val):
+    return (ip_val >> 8) & 0b11
+
+def location(ip_val):
+    return (ip_val >> 10) & 0x3fff
+
+
 class TopoSwitch (object):
-  """
-  A Tutorial object is created for each switch that connects.
-  A Connection object for that switch is passed to the __init__ function.
-  """
   def __init__ (self, connection, dpid, topo):
-    # Keep track of the connection to the switch so that we can
-    # send it messages!
+
     self.connection = connection
     self.graph_name = 's' + str(int(dpid) - 1)
-    # self.TOPO = topo
-    # self.ip = topo['switch_to_ip'][self.graph_name]
-    # This binds our PacketIn event listener
+    self.TOPO = topo
+    self.ip = topo['switch_to_ip'][self.graph_name]
+
     connection.addListeners(self)
 
-    self.topo = topo
+
+  def get_neighbor_ip_map(self):
+    out = {}
+    neighbors = self.TOPO['graph'][self.graph_name].keys()
+    for h in self.TOPO['graph'].nodes(data='ip'):
+      if h[0] in neighbors:
+        out[h[0]] = h[1]
+
+    return out
+
 
   def resend_packet (self, packet_in, out_port):
-    """
-    Instructs the switch to resend a packet that it had sent to us.
-    "packet_in" is the ofp_packet_in object the switch had sent to the
-    controller due to a table-miss.
-    """
     msg = of.ofp_packet_out()
     msg.data = packet_in
 
-    # Add an action to send to the specified port
     action = of.ofp_action_output(port = out_port)
     msg.actions.append(action)
 
-    # Send message to switch
     self.connection.send(msg)
 
 
-  def act_like_hub (self, packet, packet_in):
-    """
-    Implement hub-like behavior -- send all packets to all ports besides
-    the input port.
-    """
-    # We want to output to all ports -- we do that using the special
-    # OFPP_ALL port as the output port.  (We could have also used
-    # OFPP_FLOOD.)
-    self.resend_packet(packet_in, of.OFPP_ALL)
-
-    # Note that if we didn't get a valid buffer_id, a slightly better
-    # implementation would check that we got the full data before
-    # sending it (len(packet_in.data) should be == packet_in.total_len)).
-
-
-  def act_like_switch (self, packet, packet_in):
-    """
-    Implement switch-like behavior.
-    """
-
-    pass
-
-
   def _handle_PacketIn (self, event):
-    """
-    Handles packet in messages from the switch.
-    """
 
     packet = event.parsed # This is the parsed packet data.
     if not packet.parsed:
@@ -101,24 +72,109 @@ class TopoSwitch (object):
       return
 
     packet_in = event.ofp # The actual ofp_packet_in message.
-    log.info("hello!!!!")
 
-    # log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
+    ip_val = ip_to_val(self.ip)
+    lvl, idx, loc = level(ip_val), index(ip_val), location(ip_val)
+    log.info("switch num " + self.graph_name + ", ip is " + self.ip)    
+    log.info("level: %d index: %d location: %s" % (lvl, idx, bin(loc)))
 
-    # ipv4 = packet.find('ipv4')
-    #   if ipv4 is not None:
-    #     log.info("just the ping case")
-    #     srcip = ipv4.srcip
-    #     dstip = ipv4.dstip
-    #     hosts = self.TOPO['graph'].nodes(data='ip')
-    #     for host in hosts:
-    #       if host[1] == srcip:
-    #         srchost = host[0]
-    #       if host[1] == dstip:
-    #         dsthost = host[0]
-    #     log.info("src host: " + str(srchost) + ", dsthost: " + str(dsthost))
-    #     self.act_like_switch(packet, packet_in, event, srchost, dsthost, ipv4.id)
+    ipv4 = packet.find('ipv4')
+    if ipv4 is not None:
 
+      dstip = ipv4.dstip
+      srcip = ipv4.srcip
+      dest_location = location(ip_to_val(dstip.toStr()))
+      log.info("src: %s, dest: %s, dest_location: %s" % (srcip, dstip, bin(dest_location)))
+
+      b = int(math.ceil(math.log((self.TOPO['n_ports'] / 2), 2)))
+      sw_prefix, dest_prefix = (loc >> (b * lvl)), (dest_location >> (b * lvl)) 
+      log.info("switch_prefix: %s, dest_prefix: %s" % (sw_prefix, dest_prefix))
+
+      if sw_prefix == dest_prefix: # route downwards
+
+          if lvl == 0: # sending to a host
+            hosts = self.TOPO['graph'].nodes(data='ip')
+            for h in hosts:
+              if h[1] == dstip:
+                dsthost = h[0]
+
+            out_port = self.TOPO['outport_mappings'][(self.graph_name, dsthost)]
+            log.info("routing to host out of port %s" % (str(out_port)))
+            self.resend_packet(packet_in, out_port)
+
+          else: # find the right switch to forward to
+            next_prefix = dest_location >> (b * (lvl - 1))
+            next_bits = next_prefix & ((2 ** b) - 1)
+            log.info("routing downwards, next bits: %s" % bin(next_bits))
+
+            neighbor_ips = self.get_neighbor_ip_map()
+            for k, v in neighbor_ips.items():
+                if (location(ip_to_val(v)) >> (b * (lvl - 1))) == next_prefix:
+                    out_port = self.TOPO['outport_mappings'][(self.graph_name, k)]
+                    log.info("routing down to switch %s out of port %s" % (k, out_port))
+                    break
+
+            self.resend_packet(packet_in, out_port)
+
+      else: # route upwards
+        log.info("routing upwards from level %d to level %d" % (lvl, lvl + 1))
+
+        neighbor_ips = self.get_neighbor_ip_map()
+        upper_level = []
+        for k, v in neighbor_ips.items():
+            log.info("ip: %s level: %d" % (k, level(ip_to_val(v))))
+            if level(ip_to_val(v)) == lvl + 1:
+                upper_level.append(k)
+
+        random_switch = random.choice(upper_level)
+        out_port = self.TOPO['outport_mappings'][(self.graph_name, random_switch)]
+        log.info("routing up to switch %s out of port %s" % (random_switch, out_port))
+        self.resend_packet(packet_in, out_port)
+
+    '''          
+      hosts = self.TOPO['graph'].nodes(data='ip')
+      for host in hosts:
+        if host[1] == srcip:
+          srchost = host[0]
+        if host[1] == dstip:
+          dsthost = host[0]
+      log.info("src host: " + str(srchost) + ", dsthost: " + str(dsthost))
+    
+      packet_paths = self._get_paths(srchost, dsthost)
+      path = packet_paths[packet_id % len(packet_paths)]
+      next_host_index = path.index(self.graph_name) + 1
+
+      outport = self.TOPO['outport_mappings'][(self.graph_name, path[next_host_index])]
+      log.info("Sending packet " + str(packet_id) + " from " + self.graph_name + " to " + str(path[next_host_index]) + " on port " + str(outport))
+      self.resend_packet(packet_in, outport)
+    '''
+
+    '''
+    tcpp = packet.find('tcp')
+    if tcpp is not None:
+      log.info(tcpp)
+
+      msg = of.ofp_flow_mod()
+      msg.priority = 42
+      msg.match.dl_type = 0x800
+      msg.match.nw_proto = 6
+      msg.match.tp_src = tcpp.srcport #get src port
+      ipv4 = packet.find('ipv4')
+      if ipv4 is not None: #should not be none, cuz if its TCP, it has to be IP as well
+        srcip = ipv4.srcip
+        dstip = ipv4.dstip
+        msg.match.nw_src = IPAddr(ipv4.srcip)
+        msg.match.nw_dst = IPAddr(ipv4.dstip)
+        hosts = self.TOPO['graph'].nodes(data='ip')
+        for host in hosts:
+          if host[1] == srcip:
+            srchost = host[0]
+          if host[1] == dstip:
+            dsthost = host[0]
+        outport = self.act_like_switch(packet, packet_in, event, srchost, dsthost, tcpp.srcport)
+        msg.actions.append(of.ofp_action_output(port = outport))
+        self.connection.send(msg)
+    '''
 
 
 def launch (p):
