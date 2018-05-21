@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from mininet.topo import Topo
@@ -14,15 +15,12 @@ from subprocess import Popen
 from time import sleep, time
 import pickle
 
-pkl = '/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle'
-
 def mac_from_value(v):
     return ':'.join(s.encode('hex') for s in ('%0.12x' % v).decode('hex'))
 
 class JellyFishTop(Topo):
-    ''' TODO, build your topology here'''
 
-    def build(self):
+    def build(self, pkl):
         topo = pickle.load(open(pkl, 'r'))
         outport_mappings = topo['outport_mappings']
         print outport_mappings
@@ -76,9 +74,9 @@ def experiment(net):
         net.pingAll()
         net.stop()
 
-def main():
-    topo = JellyFishTop()
-    net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX)
+def main(p):
+    topo = JellyFishTop(pkl=p)
+    net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX("jelly", cargs2=("--p=%s" % (p))))
 
     host_to_ip = topo.topo['host_to_ip']
 
@@ -96,5 +94,10 @@ def main():
     experiment(net)
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(description="Run F10 topology.")
+    parser.add_argument('--pickle', help='Topology pickle input path', default=None)
+    args = parser.parse_args()
+
+    main(args.pickle)
 

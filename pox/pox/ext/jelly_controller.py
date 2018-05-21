@@ -33,14 +33,12 @@ from pox.lib.addresses import IPAddr
 
 log = core.getLogger()
 
-topo = pickle.load(open('/home/diveesh/cs244-final-project/pox/pox/ext/small_topo.pickle'))
-
 class TopoSwitch (object):
   """
   A Tutorial object is created for each switch that connects.
   A Connection object for that switch is passed to the __init__ function.
   """
-  def __init__ (self, connection, dpid):
+  def __init__ (self, connection, dpid, topo):
     # Keep track of the connection to the switch so that we can
     # send it messages!
     self.connection = connection
@@ -50,9 +48,7 @@ class TopoSwitch (object):
     # This binds our PacketIn event listener
     connection.addListeners(self)
 
-    # Use this table to keep track of which ethernet address is on
-    # which switch port (keys are MACs, values are ports).
-
+    self.topo = topo
 
   def resend_packet (self, packet_in, out_port):
     """
@@ -125,14 +121,13 @@ class TopoSwitch (object):
 
 
 
-def launch ():
-  """
-  Starts the component
-  """
+def launch (p):
+    
+  topo = pickle.load(open(p))
 
   def start_switch (event):
     log.info("Controlling %s" % (event.connection,))
     log.info("DPID is "  + str(event.dpid))
-    TopoSwitch(event.connection, event.dpid)
+    TopoSwitch(event.connection, event.dpid, topo)
 
   core.openflow.addListenerByName("ConnectionUp", start_switch)
