@@ -93,7 +93,7 @@ class TopoSwitch (object):
       sw_prefix, dest_prefix = (loc >> (b * lvl)), (dest_location >> (b * lvl)) 
       log.info("switch_prefix: %s, dest_prefix: %s" % (sw_prefix, dest_prefix))
 
-      if sw_prefix == dest_prefix: # route downwards
+      if sw_prefix == dest_prefix or lvl == 2: # route downwards
 
           if lvl == 0: # sending to a host
             hosts = self.TOPO['graph'].nodes(data='ip')
@@ -107,7 +107,10 @@ class TopoSwitch (object):
 
           else: # find the right switch to forward to
             next_prefix = dest_location >> (b * (lvl - 1))
-            next_bits = next_prefix & ((2 ** b) - 1)
+            if lvl == 2:
+              next_bits = next_prefix & ((2 ** (b+1)) - 1)
+            else:
+              next_bits = next_prefix & ((2 ** b) - 1)
             log.info("routing downwards, next bits: %s" % bin(next_bits))
 
             neighbor_ips = self.get_neighbor_ip_map()
