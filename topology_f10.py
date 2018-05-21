@@ -79,12 +79,12 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
 
                     if i == 0: # from L0 to servers
                         for n in range(num_servers_per_switch):
-                            open_ports[switch_num] -= 1
                             curr_switch = 's' + str(switch_num)
                             curr_host = 'h' + str(switch_num * num_servers_per_switch + n)
                             G.add_edge(curr_switch, curr_host)
                             outport_mappings[(curr_switch, curr_host)] = open_ports[switch_num]
                             outport_mappings[(curr_host, curr_switch)] = 1
+                            open_ports[switch_num] -= 1
 
                     for n in range(p):
                         if i == 0: #L0 to L1
@@ -94,13 +94,13 @@ def generate_topology(n_servers, k=24, L=2, debug=False):
                                 to_switch_num = (i + 1) * n_switches_per_layer + j * p + n
                             else: #B subtree
                                 to_switch_num = (i + 1) * n_switches_per_layer + n * p ** i + j
-                        open_ports[switch_num] -= 1
-                        open_ports[to_switch_num] -= 1
                         from_switch = 's' + str(switch_num)
                         to_switch = 's' + str(to_switch_num)
                         G.add_edge(from_switch, to_switch)
                         outport_mappings[(from_switch, to_switch)] = open_ports[switch_num]
                         outport_mappings[(to_switch, from_switch)] = open_ports[to_switch_num]
+                        open_ports[switch_num] -= 1
+                        open_ports[to_switch_num] -= 1
     return topo
                             
                         

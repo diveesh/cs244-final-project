@@ -72,7 +72,13 @@ class F10Top(Topo):
 
 def experiment(net):
         net.start()
-        sleep(3)
+
+        sys.stdout.write("Waiting 10 seconds for Mininet to start...")
+        sys.stdout.flush()
+        sleep(10)
+        sys.stdout.write(" done.\n")
+        sys.stdout.flush()
+
         net.pingAll()
         net.stop()
 
