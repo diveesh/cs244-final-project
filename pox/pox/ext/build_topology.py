@@ -13,7 +13,7 @@ from mininet.node import RemoteController
 from mininet.cli import CLI
 from mininet.util import dumpNetConnections
 sys.path.append("../../")
-from pox.ext.jelly_pox import JELLYPOX
+from pox.ext.f10_pox import F10POX
 from subprocess import Popen
 from time import sleep, time
 
@@ -84,7 +84,7 @@ def experiment(net):
 
 def main(p):
     topo = F10Top(pkl=p)
-    net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=JELLYPOX("jelly", cargs2=("--p=%s" % (p))))
+    net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=F10POX("f10", cargs2=("--p=%s" % (p))))
 
     host_to_ip = topo.topo['host_to_ip']
 

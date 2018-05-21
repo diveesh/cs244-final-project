@@ -136,24 +136,6 @@ class TopoSwitch (object):
         log.info("routing up to switch %s out of port %s" % (random_switch, out_port))
         self.resend_packet(packet_in, out_port)
 
-    '''          
-      hosts = self.TOPO['graph'].nodes(data='ip')
-      for host in hosts:
-        if host[1] == srcip:
-          srchost = host[0]
-        if host[1] == dstip:
-          dsthost = host[0]
-      log.info("src host: " + str(srchost) + ", dsthost: " + str(dsthost))
-    
-      packet_paths = self._get_paths(srchost, dsthost)
-      path = packet_paths[packet_id % len(packet_paths)]
-      next_host_index = path.index(self.graph_name) + 1
-
-      outport = self.TOPO['outport_mappings'][(self.graph_name, path[next_host_index])]
-      log.info("Sending packet " + str(packet_id) + " from " + self.graph_name + " to " + str(path[next_host_index]) + " on port " + str(outport))
-      self.resend_packet(packet_in, outport)
-    '''
-
     '''
     tcpp = packet.find('tcp')
     if tcpp is not None:
