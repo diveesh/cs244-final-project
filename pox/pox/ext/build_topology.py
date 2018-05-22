@@ -78,6 +78,13 @@ def experiment(net):
         sys.stdout.write(" done.\n")
         sys.stdout.flush()
 
+
+
+        kill_test = net.getNodeByName('s9')
+        kill_test.stop()
+
+        # kill_test = net.getNodeByName('s18')
+        # kill_test.stop()
         net.pingAll()
         net.stop()
 
