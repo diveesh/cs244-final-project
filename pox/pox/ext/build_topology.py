@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import simplejson as json
 import subprocess
 import sys
 from mininet.topo import Topo
@@ -16,11 +17,12 @@ from pox.ext.f10_pox import F10POX
 from subprocess import Popen
 from time import sleep, time
 
+
 def mac_from_value(v):
     return ':'.join(s.encode('hex') for s in ('%0.12x' % v).decode('hex'))
 
-class F10Top(Topo):
 
+class F10Top(Topo):
     def build(self, pkl):
         topo = pickle.load(open(pkl, 'r'))
         outport_mappings = topo['outport_mappings']
@@ -69,19 +71,43 @@ class F10Top(Topo):
 
         self.topo = topo
 
-def experiment(net):
-        net.start()
 
-        sys.stdout.write("Waiting 3 seconds for Mininet to start...")
+def experiment(net, mr_config_data):
+    net.start()
+
+    sys.stdout.write("Waiting 3 seconds for Mininet to start...")
+    sys.stdout.flush()
+    sleep(3)
+    sys.stdout.write(" done.\n")
+    sys.stdout.flush()
+
+    net.pingAll()
+
+    ### MAP REDUCE ###
+
+    if mr_config_data:
+
+        sys.stdout.write("Running map-reduce on topology...")
         sys.stdout.flush()
-        sleep(3)
+    
+        master_k, master_v = mr_config_data["master"].items()[0]
+        master_addr_port = ":".join(master_v)
+
+        for w, v in mr_config_data["workers"].items():
+            net.get(w).sendCmd("cd", "mapreduce", "&&", "./wordcount" , "-w", "-a", ":".join(v), "-m", master_addr_port)
+
+        master = net.get(master_k)
+        master.sendCmd("cd", "mapreduce", "&&", "./wordcount", "-p", "-r", "32", "-m", master_addr_port, "./data/input/pg-*.txt")
+        master.monitor()
+
+        output = master.waitOutput()
         sys.stdout.write(" done.\n")
         sys.stdout.flush()
+        print("MapReduce Output:")
+        print(output)
 
-        net.pingAll()
-        net.stop()
 
-def main(p):
+def main(p, mr_config):
     topo = F10Top(pkl=p)
     net = Mininet(topo=topo, host=CPULimitedHost, link = TCLink, controller=F10POX("f10", cargs2=("--p=%s" % (p))))
 
@@ -98,7 +124,13 @@ def main(p):
             # print "Setting arp for host " + str(h) + ", index " + str(i) + ". j " + str(j) + ", mac is " + mac_from_value(host_mac_base + j + 1)
             mn_host.setARP(host_to_ip[j], mac_from_value(host_mac_base + j + 1))
 
-    experiment(net)
+    if mr_config:
+        with open(mr_config, 'r') as f:
+            mr_config_data = json.load(f)
+    else:
+        mr_config_data = None
+
+    experiment(net, mr_config_data)
 
 
 def cleanmn():
@@ -114,9 +146,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run F10 topology.")
     parser.add_argument('--pickle', help='Topology pickle input path', default=None)
+    parser.add_argument('--mr_config', help='Map-Reduce configuration', default=None)
     args = parser.parse_args()
 
     cleanmn()
 
-    main(args.pickle)
+    main(args.pickle, args.mr_config)
 
