@@ -8,7 +8,7 @@ from itertools import islice
 from time import sleep, time
 
 
-from topology_f10 import generate_topology
+from topology import generate_topology
 
 
 if __name__ == "__main__":
