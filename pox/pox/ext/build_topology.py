@@ -11,7 +11,6 @@ from mininet.node import OVSController
 from mininet.node import Controller
 from mininet.node import RemoteController
 from mininet.cli import CLI
-from mininet.util import dumpNetConnections
 sys.path.append("../../")
 from pox.ext.f10_pox import F10POX
 from subprocess import Popen
@@ -73,9 +72,9 @@ class F10Top(Topo):
 def experiment(net):
         net.start()
 
-        sys.stdout.write("Waiting 10 seconds for Mininet to start...")
+        sys.stdout.write("Waiting 3 seconds for Mininet to start...")
         sys.stdout.flush()
-        sleep(10)
+        sleep(3)
         sys.stdout.write(" done.\n")
         sys.stdout.flush()
 
@@ -91,7 +90,7 @@ def main(p):
     host_mac_base = len(topo.mn_switches)
     for i, h in enumerate(topo.mn_hosts):
         mn_host = net.getNodeByName(h)
-        print h, mac_from_value(host_mac_base + i + 1)
+        # print h, mac_from_value(host_mac_base + i + 1)
         mn_host.setMAC(mac_from_value(host_mac_base + i + 1))
         for j, h2 in enumerate(topo.mn_hosts):
             if i == j: continue
@@ -99,7 +98,6 @@ def main(p):
             # print "Setting arp for host " + str(h) + ", index " + str(i) + ". j " + str(j) + ", mac is " + mac_from_value(host_mac_base + j + 1)
             mn_host.setARP(host_to_ip[j], mac_from_value(host_mac_base + j + 1))
 
-    dumpNetConnections(net)
     experiment(net)
 
 
