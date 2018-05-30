@@ -21,7 +21,7 @@ p = k / 2
 L = 2
 
 
-def generate_topology(n_servers, k=24, L=2, debug=False):
+def generate_ab_topology(n_servers, k=24, L=2, debug=False):
     G = nx.Graph()
     topo = {}
     outport_mappings = {}
