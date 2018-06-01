@@ -49,20 +49,16 @@ class F10Top(Topo):
             if e[0][0] == 'h':
                 f1 = self.mn_hosts[int(e[0][1:])]
                 f1_graph = f1
-                switch1 = False
             else:
                 f1 = self.mn_switches[int(e[0][1:])]
                 f1_graph = 's' + str(int(f1[1:]) - 1)
-                switch1 = True 
 
             if e[1][0] == 'h':
                 f2 = self.mn_hosts[int(e[1][1:])]
                 f2_graph = f2
-                switch2 = False
             else:
                 f2 = self.mn_switches[int(e[1][1:])]
                 f2_graph = 's' + str(int(f2[1:]) - 1)
-                switch2 = True 
 
             port1 = outport_mappings[(f1_graph, f2_graph)]
             port2 = outport_mappings[(f2_graph, f1_graph)]
@@ -81,8 +77,17 @@ def experiment(net, mr_config_data):
     sys.stdout.write(" done.\n")
     sys.stdout.flush()
 
+    net.pingAll()
+
+    sys.stdout.write("Stopping switch 's9'...") # left-most L = 1
+    sys.stdout.flush()
     node = net.getNodeByName('s9')
     node.stop()
+    sys.stdout.write(" done.\n")
+    sys.stdout.flush()
+
+    sleep(2)
+
     net.pingAll()
 
     ### MAP REDUCE ###
@@ -107,7 +112,6 @@ def experiment(net, mr_config_data):
         sys.stdout.flush()
         print("MapReduce Output:")
         print(output)
-
 
 
 def main(p, mr_config):
