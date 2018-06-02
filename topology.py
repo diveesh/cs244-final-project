@@ -25,6 +25,7 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
     G = nx.Graph()
     topo = {}
     outport_mappings = {}
+    switch_port_mappings = {}
     switch_to_ip = {}
     host_to_ip = {}
     topo["graph"] = G
@@ -33,6 +34,7 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
     topo["outport_mappings"] = outport_mappings
     topo["switch_to_ip"] = switch_to_ip
     topo["host_to_ip"] = host_to_ip
+    topo["switch_port_mappings"] = switch_port_mappings
 
     p = k / 2
 
@@ -83,7 +85,9 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
                             curr_host = 'h' + str(switch_num * num_servers_per_switch + n)
                             G.add_edge(curr_switch, curr_host)
                             outport_mappings[(curr_switch, curr_host)] = open_ports[switch_num]
+                            switch_port_mappings[(curr_switch, open_ports[switch_num])] = curr_host
                             outport_mappings[(curr_host, curr_switch)] = 1
+                            switch_port_mappings[(curr_host, 1)] = curr_switch
                             open_ports[switch_num] -= 1
 
                     for n in range(p):
@@ -98,7 +102,9 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
                         to_switch = 's' + str(to_switch_num)
                         G.add_edge(from_switch, to_switch)
                         outport_mappings[(from_switch, to_switch)] = open_ports[switch_num]
+                        switch_port_mappings[(from_switch, open_ports[switch_num])] = to_switch
                         outport_mappings[(to_switch, from_switch)] = open_ports[to_switch_num]
+                        switch_port_mappings[(to_switch, open_ports[to_switch_num])] = from_switch
                         open_ports[switch_num] -= 1
                         open_ports[to_switch_num] -= 1
     return topo
