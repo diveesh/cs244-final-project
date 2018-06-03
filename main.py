@@ -11,6 +11,7 @@ import numpy as np
 import math
 
 from topology import generate_ab_topology
+#from fat_tree_topology import generate_topology as generate_fat_topology
 
 fail_switches = [0, 1, 5]
 
@@ -70,6 +71,18 @@ def find_ab_path(topo_map, i, j, p, L, failed_switches):
     failure_group_nodes = set()
 
     print "Finding path between " + str(i) + " and " + str(j) + ". Failed switches are " + str(failed_switches)
+
+    # for i in range(L + 1):
+    #     ns = num_switches_per_layer / 2 if i == 2 else num_switches_per_layer
+    #     print "Begin level  " + str(i) + "..."
+    #     for j in range(ns):
+    #         switch = 's' + str(i * num_switches_per_layer + j)
+    #         ip = switch_to_ip[switch]
+    #         ip_val = ip_to_val(ip)
+    #         ind, lvl, loc = index(ip_val), level(ip_val), location(ip_val)
+    #         print "\tSwitch: " + switch +  "\tip: " + str(ip) + "\tindex: " + str(bin(ind)) + "\tlvl: " + str(lvl) + "\tlocation: " + str(bin(loc))
+    #     print "-----------"
+    # print "-------------------------"
     while True:
 
         path.append(curr_switch)
@@ -94,15 +107,15 @@ def find_ab_path(topo_map, i, j, p, L, failed_switches):
                 next_bits = next_prefix & ((2 ** b) - 1)
 
             # find neighbors that are directly on the path to destination node
-            print "Current switch name: " + str(curr_switch) + ", lvl: " + str(lvl) + ", idx: " + str(idx) + ", loc: " + str(loc)
-            print "This is the next prefix " + str(next_prefix) 
-            print "Final dest loc is " + str(dest_location)
-            print "b is " + str(b)
-            print "This is all the neighbors info:"
-            for k, v in neighbor_ips.items():
-                k_ip_val = ip_to_val(switch_to_ip[k])
-                k_lvl, k_idx, k_loc = level(k_ip_val), index(k_ip_val), location(k_ip_val)
-                print "\tNeighbor switch name: " + str(k) + ", lvl: " + str(k_lvl) + ", idx: " + str(k_idx) + ", loc: " + str(k_loc)
+            # print "Current switch name: " + str(curr_switch) + ", lvl: " + str(lvl) + ", idx: " + str(idx) + ", loc: " + str(loc)
+            # print "This is the next prefix " + str(next_prefix) 
+            # print "Final dest loc is " + str(dest_location)
+            # print "b is " + str(b)
+            # print "This is all the neighbors info:"
+            # for k, v in neighbor_ips.items():
+            #     k_ip_val = ip_to_val(switch_to_ip[k])
+            #     k_lvl, k_idx, k_loc = level(k_ip_val), index(k_ip_val), location(k_ip_val)
+            #     print "\tNeighbor switch name: " + str(k) + ", lvl: " + str(k_lvl) + ", idx: " + str(k_idx) + ", loc: " + str(k_loc)
 
             valid_neighbors = [k for k,v in neighbor_ips.items() if (location(ip_to_val(v)) >> (b * (lvl - 1))) == next_prefix]
             print "The OG valid neighbors are " + str(valid_neighbors)
@@ -209,10 +222,10 @@ def calculate_paths(topo_map, n_servers, num_switches_to_fail, total_switches, p
             else:
                 path = find_ab_path(topo_map, i, j, p, L, failed_switches)
             paths[(i, j)] = len(path)
-    print paths
-    for x in paths:
-        if paths[x] > 5:
-            print x
+    # print paths
+    # for x in paths:
+    #     if paths[x] > 5:
+    #         print x
     return paths
 
 
@@ -249,6 +262,8 @@ if __name__ == "__main__":
     if args.pickle:
         with open(args.pickle, 'wb') as f:
             pickle.dump(ab_topo, f)
+    #fat_topo = generate_fat_topology(n_servers=int(args.n_servers), k=int(args.k), L=int(args.L))
 
     generate_plot(ab_topo, int(args.n_servers), int(args.k), int(args.L), 'ab')
+
     # generate fat topology
