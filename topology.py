@@ -49,13 +49,25 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
 
     topo["n_switches"] = total_switches 
 
+    b = int(math.ceil(math.log(p, 2)))
+    h = 0
+    for l1 in range(n_switches_per_layer / p):
+        for l2 in range(p):
+            loc = (l1 << b) + l2
+            for c in range(num_servers_per_switch):
+                ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
+                host_num = h
+                host_to_ip[host_num] = ip
+                print "For host num " + str(host_num) + ", the loc is " + str(bin(loc))
+                G.add_node('h'+str(host_num), ip=ip) #naming scheme
+                h += 1
 
-    for loc in range(2 ** location_bit_length):
-        for c in range(num_servers_per_switch):
-            ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
-            host_num = loc * num_servers_per_switch + c
-            host_to_ip[host_num] = ip
-            G.add_node('h'+str(host_num), ip=ip) #naming scheme
+    # for loc in range(2 ** location_bit_length):
+    #     for c in range(num_servers_per_switch):
+    #         ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
+    #         host_num = loc * num_servers_per_switch + c
+    #         host_to_ip[host_num] = ip
+    #         G.add_node('h'+str(host_num), ip=ip) #naming scheme
 
     print 'switches'
     #likely only works for L=2
@@ -74,7 +86,13 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
             for m in range(num_groups): # group num
                 for j in range(num_switches_per_group): # index within group
                     switch_num = i * num_groups * num_switches_per_group + m * num_switches_per_group + j
-                    loc = m * p ** i
+                    
+                    if i == 0:
+                        pref = m / p
+                        suf = m % p
+                        loc = (pref << b) + suf
+                    elif i == 1:
+                        loc = (m << b)
                     ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | i << 8 | j))
                     switch_to_ip['s' + str(switch_num)] = ip
                     G.add_node('s' + str(switch_num), ip=ip) #update naming scheme once figured
