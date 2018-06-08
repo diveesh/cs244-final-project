@@ -96,7 +96,6 @@ class TopoSwitch (object):
     self.TOPO = topo
     self.ip = topo['switch_to_ip'][self.graph_name]
     self.dead_switches = []
-    self.pre_dead_switches = []
 
     self.pb_messages = {}
     self.seen_pbs = []
@@ -162,27 +161,15 @@ class TopoSwitch (object):
 
     pb_id = random.randint(1, 1000000000)
     switches = core.list.get_list()
-    log.info("AXXX")
     for s in switches:
-      s.pre_update_down_switches(event.dpid)
-      '''
-      core.callDelayed(0.101, s.update_down_switches, event.dpid, pb_id)
-      '''
-      # s.update_down_switches(event.dpid, pb_id)
-
-
-  def pre_update_down_switches(self, dpid):
-    dead_switch_name = 's' + str(int(dpid) - 1)
-    self.pre_dead_switches.append(dead_switch_name)
+      core.callDelayed(0.001, s.update_down_switches, event.dpid, pb_id)
 
 
   def update_down_switches(self, dpid, pb_id):
     log.info("telling switch " + self.graph_name + " that switch with dpid " + str(dpid) + " is down")
     dead_switch_name = 's' + str(int(dpid) - 1)
     self.dead_switches.append(dead_switch_name)
-    self.pre_dead_switches.remove(dead_switch_name)
     # log.info("these are the dead switches now " + str(self.dead_switches))
-    log.info("BXXX")
 
     ip_val = ip_to_val(self.ip)
     lvl, idx, loc = level(ip_val), index(ip_val), location(ip_val)
@@ -261,9 +248,6 @@ class TopoSwitch (object):
               if k in self.dead_switches:
                 port = self.TOPO['outport_mappings'][(self.graph_name, k)]
                 invalid_ports.append(port)
-              elif k in self.pre_dead_switches:
-                port = self.TOPO['outport_mappings'][(self.graph_name, k)]
-                pre_invalid_ports.append(port)
 
             # PUSHBACK: add to invalid ports if we've gotten a pushback message
             for failed_prefix, message in self.pb_messages.items():
