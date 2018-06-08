@@ -58,16 +58,9 @@ def generate_ab_topology(n_servers, k=24, L=2, debug=False):
                 ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
                 host_num = h
                 host_to_ip[host_num] = ip
-                print "For host num " + str(host_num) + ", the loc is " + str(bin(loc))
+                # print "For host num " + str(host_num) + ", the loc is " + str(bin(loc))
                 G.add_node('h'+str(host_num), ip=ip) #naming scheme
                 h += 1
-
-    # for loc in range(2 ** location_bit_length):
-    #     for c in range(num_servers_per_switch):
-    #         ip = socket.inet_ntoa(struct.pack('!L', 10 << 24 | loc << 10 | (c + 1)))
-    #         host_num = loc * num_servers_per_switch + c
-    #         host_to_ip[host_num] = ip
-    #         G.add_node('h'+str(host_num), ip=ip) #naming scheme
 
     print 'switches'
     #likely only works for L=2
