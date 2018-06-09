@@ -45,13 +45,3 @@ The "full" path inflation (Figure 10) statistics for a complete 24-port AB FatTr
 ```
 $ sudo python main.py --n_servers 1728 -k 24 -L 2 --out result.eps
 ```
-
-You can also try out a sample MapReduce application running on our topology (code gratefully sourced from David Maziere's CS240 _last_ spring, where we implemented MapReduce on top of a socket interface). Here are the instructions for that:
-
-```
-$ pwd
-~/cs244-final-project
-$ cd pox/pox/ext/
-$ TODO
-```
-
