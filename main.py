@@ -292,6 +292,8 @@ def graph(ab, fat, o):
     fat['limit'] = 16
     subplt = 211
 
+    f_switches = fail_switches[1:]
+
     plt.figure(1)
     for g in [ab, fat]:
         plt.subplot(subplt)
@@ -303,8 +305,8 @@ def graph(ab, fat, o):
         plt.ylabel('CCDF over trials')
         handles = []
         labels = []
-        for i in reversed(range(len(fail_switches))):
-            f = fail_switches[i]
+        for i in reversed(range(len(f_switches))):
+            f = f_switches[i]
             if f == 0:
                 continue
             counts = g[f]
@@ -328,7 +330,10 @@ def graph(ab, fat, o):
             print y_vals
             print '------'
             idx = np.argsort(x_vals)
-            plt.stem([x_vals[idx[len(x_vals) - 1]]], [y_vals[idx[len(x_vals) - 1]]], linefmt=linefmts[i])
+            a = x_vals[idx[len(idx) - 1]]
+            b = y_vals[idx[len(idx) - 1]]
+            c = linefmts[i]
+            plt.stem([a], [b], linefmt=c)
             handles.append(plt.plot(x_vals[idx], y_vals[idx], pts[i], linestyle=ls[i], label=str(f) + ' failures'))
             labels.append(str(f) + ' failures' if f != 1 else '1 failure')
             print labels
