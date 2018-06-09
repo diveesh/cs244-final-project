@@ -2,3 +2,4 @@
 *.pickle
 *.log
 *.out
+pox/pox/ext/*.csv
