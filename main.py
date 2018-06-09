@@ -14,14 +14,22 @@ import matplotlib.pyplot as plt
 from topology import generate_ab_topology
 from fat_tree_topology import generate_topology as generate_fat_topology
 
-fail_switches = [0, 1]
+fail_switches = [0, 5]
 
-predefined_switches = {
+predefined_switches_small = {
     0: [],
     1: [108],
     5: [101, 131, 99, 176, 81],
     10: [172, 99, 105, 84, 156, 174, 101, 81, 170, 77],
     15: [172, 99, 105, 84, 156, 174, 101, 81, 170, 77, 126, 176, 166, 171, 177]
+}
+
+predefined_switches_large = {
+    0: [], 
+    1: [432], 
+    5: [404, 524, 396, 704, 324], 
+    10: [688, 396, 420, 336, 624, 696, 404, 324, 680, 308], 
+    15: [688, 396, 420, 336, 624, 696, 404, 324, 680, 308, 504, 704, 664, 684, 708]
 }
 
 def ip_to_val(ip):
@@ -223,8 +231,6 @@ def find_path(topo_map, start, end, p, L, failed_switches, tp):
         prev_lvl = lvl
     # print "FINAL PATH BETWEEN " + str(i) + " and " + str(j) + " is " + str(path)
     # print "---------------------------------------"
-    if len(path) == 13:
-        print start, end, path
     return path
 
 def calculate_paths(topo_map, n_servers, failed_switches, total_switches, p, L, tp):
@@ -263,9 +269,7 @@ def generate_plot(topo_map, n_servers, k, L, fails_map, tp, **kwargs):
             if path_lengths[k] - orig_len == 8:
                 print k, path_lengths[k]
             results[num_switches_to_fail][path_lengths[k] - orig_len] += 1
-    for l in original_path_lengths:
-        if original_path_lengths[l] > 5:
-            print l, original_path_lengths[l]
+
     return results
 
 def generate_failed_switches(topo_map, p, L):
@@ -277,7 +281,7 @@ def generate_failed_switches(topo_map, p, L):
             fails[num_switches_to_fail] = np.random.choice(topo_map['n_switches'] - 2 * p ** L, size=num_switches_to_fail, replace=False) + 2 * p ** L
     return fails
 
-def graph(ab, fat):
+def graph(ab, fat, o):
     ls = ['-', '--',':', '-.']
     pts = ['rs', 'go', 'bX', 'm+']
     ab['limit'] = 10
@@ -285,7 +289,7 @@ def graph(ab, fat):
     subplt = 211
 
     plt.figure(1)
-    for g in [test_ab, test_fat]:
+    for g in [ab, fat]:
         plt.subplot(subplt)
         plt.xlim(0, 18)
         plt.xticks(range(0, 18, 2))
@@ -324,8 +328,10 @@ def graph(ab, fat):
             print labels
         plt.legend(labels)
         subplt += 1
-
-    plt.show()
+    if o is not None:
+        plt.savefig(o, format='eps', dpi=1000)
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     random.seed(42)
@@ -336,30 +342,41 @@ if __name__ == "__main__":
     parser.add_argument('-L', help='Number of levels this topology has', default=2)
     parser.add_argument('--pickle', help='Topology pickle output path', default=None)
     parser.add_argument('-s', help='Ignores parameters and runs a small topology with pre-picked switch failures', action='store_true')
+    parser.add_argument('-b', help='Ignores parameters and runs a large topology with pre-picked switch failures', action='store_true')
+    parser.add_argument('--out', help='File to write graphs out to', default=None)
     args = parser.parse_args()
 
     if args.s:
         k = 12
         n_servers = 144
         L = 2
+        fails_map = predefined_switches_small
+    elif args.b:
+        k = 24
+        n_servers = 1728
+        L = 2
+        fails_map = predefined_switches_large
     else:
         k = int(args.k)
         n_servers = int(args.n_servers)
         L = int(args.L)
+        
 
     ab_topo = generate_ab_topology(n_servers=n_servers, k=k, L=L)
+    #fat_topo = generate_fat_topology(n_servers=n_servers, k=k, L=L)
+
+    if not args.s and not args.b:
+        fails_map = generate_failed_switches(ab_topo, int(args.k) / 2, int(args.L))
+
     if args.pickle:
         with open(args.pickle, 'wb') as f:
             pickle.dump(ab_topo, f)
 
-    fat_topo = generate_fat_topology(n_servers=n_servers, k=k, L=L)
+    res_ab = generate_plot(ab_topo, n_servers, k, L, fails_map, 'ab')
+    #res_fat = generate_plot(ab_topo, n_servers, k, L, fails_map, 'fat')
 
-    fails_map = predefined_switches if args.s else generate_failed_switches(ab_topo, int(args.k) / 2, int(args.L))
-    #res_ab = generate_plot(ab_topo, n_servers, k, L, fails_map, 'ab')
-    res_fat = generate_plot(ab_topo, n_servers, k, L, fails_map, 'fat')
+    #graph(res_ab, res_fat, args.out)
 
-    #graph(res_ab, res_fat)
-
-    #print res_ab
-    print res_fat
+    print res_ab
+    #print res_fat
 
