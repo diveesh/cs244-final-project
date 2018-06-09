@@ -14,7 +14,15 @@ import matplotlib.pyplot as plt
 from topology import generate_ab_topology
 from fat_tree_topology import generate_topology as generate_fat_topology
 
-fail_switches = [0, 1, 5, 10, 15]
+fail_switches = [0, 1]
+
+predefined_switches = {
+    0: [],
+    1: [108],
+    5: [101, 131, 99, 176, 81],
+    10: [172, 99, 105, 84, 156, 174, 101, 81, 170, 77],
+    15: [172, 99, 105, 84, 156, 174, 101, 81, 170, 77, 126, 176, 166, 171, 177]
+}
 
 def ip_to_val(ip):
     byte_list = ip.split('.')
@@ -43,7 +51,7 @@ def get_neighbor_ips(topology, s, switch_to_ip):
             m[n] = switch_to_ip[n]
     return m
 
-def find_path(topo_map, i, j, p, L, failed_switches, tp):
+def find_path(topo_map, start, end, p, L, failed_switches, tp):
 
     topology = topo_map['graph']
     host_to_ip = topo_map['host_to_ip']
@@ -55,12 +63,13 @@ def find_path(topo_map, i, j, p, L, failed_switches, tp):
     num_hosts_per_switch = topo_map['n_hosts'] / num_switches_per_layer
     #print num_hosts_per_switch
 
-    dstip = host_to_ip[j]
+    dstip = host_to_ip[end]
     dest_location = location(ip_to_val(dstip))
     b = int(math.ceil(math.log((topo_map['n_ports'] / 2), 2)))
     
-    curr_switch = 's' + str(i / num_hosts_per_switch)
-    dest_switch = 's' + str(j / num_hosts_per_switch)
+    curr_switch = 's' + str(start / num_hosts_per_switch)
+    start_switch = curr_switch
+    dest_switch = 's' + str(end / num_hosts_per_switch)
 
     path = []
     #print 'destination switch is ' + dest_switch
@@ -84,7 +93,6 @@ def find_path(topo_map, i, j, p, L, failed_switches, tp):
 
         #print "Currently at level " + str(lvl) + ". Curr switch is " + curr_switch + ". Failed switches is " + str(failed_switches)
 #        print "SW prefix is " + str(sw_prefix) + ", and dest prefix is " + str(dest_prefix) + ". REminder that destination switch is " + dest_switch
-
         if sw_prefix == dest_prefix or lvl == 2: #route down for sure cuz either at highest level, or our destination is in subtree
             #print "In the main routing down case"
             # don't need to explicitly send to host because we only care about the switch that the host is connected to
@@ -215,14 +223,11 @@ def find_path(topo_map, i, j, p, L, failed_switches, tp):
         prev_lvl = lvl
     # print "FINAL PATH BETWEEN " + str(i) + " and " + str(j) + " is " + str(path)
     # print "---------------------------------------"
+    if len(path) == 13:
+        print start, end, path
     return path
 
 def calculate_paths(topo_map, n_servers, failed_switches, total_switches, p, L, tp):
-    # 
-    # if num_switches_to_fail == 1:
-    #     failed_switches = np.random.choice(2 * p ** L, size=1) + 2 * p ** L
-    # else:
-    #     failed_switches = np.random.choice(topo_map['n_switches'] - 2 * p ** L, size=num_switches_to_fail, replace=False) + 2 * p ** L
     failed_switches = ['s' + str(s) for s in failed_switches] # stringify
 
     paths = {}
@@ -233,6 +238,7 @@ def calculate_paths(topo_map, n_servers, failed_switches, total_switches, p, L, 
                 continue
             path = find_path(topo_map, i, j, p, L, failed_switches, tp)
             paths[(i, j)] = len(path)
+        # print 'found all paths starting from host ' + str(i)
     return paths
 
 
@@ -243,7 +249,7 @@ def generate_plot(topo_map, n_servers, k, L, fails_map, tp, **kwargs):
     total_switches = 2 * L * p ** L + p ** L
     original_path_lengths = {}
     for num_switches_to_fail in fail_switches:
-        print 'starting ' + str(num_switches_to_fail) + ' failed switches'
+        print 'starting ' + str(num_switches_to_fail) + ' failed switches for tp ' + str(tp)
         path_lengths = calculate_paths(topo_map, n_servers, fails_map[num_switches_to_fail], total_switches, p, L, tp)
         if num_switches_to_fail == 0:
             original_path_lengths = path_lengths
@@ -254,8 +260,9 @@ def generate_plot(topo_map, n_servers, k, L, fails_map, tp, **kwargs):
         # results[num_switches_to_fail] stores (num_additional_hops -> num host pairs)
         for k in path_lengths:
             orig_len = original_path_lengths[k]
+            if path_lengths[k] - orig_len == 8:
+                print k, path_lengths[k]
             results[num_switches_to_fail][path_lengths[k] - orig_len] += 1
-    print 'AT THE END!!!'
     for l in original_path_lengths:
         if original_path_lengths[l] > 5:
             print l, original_path_lengths[l]
@@ -270,6 +277,56 @@ def generate_failed_switches(topo_map, p, L):
             fails[num_switches_to_fail] = np.random.choice(topo_map['n_switches'] - 2 * p ** L, size=num_switches_to_fail, replace=False) + 2 * p ** L
     return fails
 
+def graph(ab, fat):
+    ls = ['-', '--',':', '-.']
+    pts = ['rs', 'go', 'bX', 'm+']
+    ab['limit'] = 10
+    fat['limit'] = 16
+    subplt = 211
+
+    plt.figure(1)
+    for g in [test_ab, test_fat]:
+        plt.subplot(subplt)
+        plt.xlim(0, 18)
+        plt.xticks(range(0, 18, 2))
+        plt.yscale('log')
+        plt.grid(True)
+        plt.xlabel('Additional Hops')
+        plt.ylabel('CCDF over trials')
+        handles = []
+        labels = []
+        for i in reversed(range(len(fail_switches))):
+            f = fail_switches[i]
+            counts = g[f]
+            fac = max([v for k, v in counts.items() if k != 0])
+            y_vals = []
+            x_vals = []
+            for plen in counts:
+                if plen > g['limit']:
+                    counts[g['limit']] += counts[plen]
+
+            for plen in counts:
+                if plen == 0 or plen > g['limit']:
+                    continue
+                y = float(counts[plen]) / fac
+                x = plen
+                y_vals.append(y)
+                x_vals.append(x)
+            x_vals = np.array(x_vals)
+            y_vals = np.array(y_vals)
+            print x_vals
+            print y_vals
+            print '------'
+            idx = np.argsort(x_vals)
+            plt.stem([x_vals[idx[len(x_vals) - 1]]], [y_vals[idx[len(x_vals) - 1]]], linefmt=linefmts[i])
+            handles.append(plt.plot(x_vals[idx], y_vals[idx], pts[i], linestyle=ls[i], label=str(f) + ' failures'))
+            labels.append(str(f) + ' failures' if f != 1 else '1 failure')
+            print labels
+        plt.legend(labels)
+        subplt += 1
+
+    plt.show()
+
 if __name__ == "__main__":
     random.seed(42)
     np.random.seed(42)
@@ -278,17 +335,31 @@ if __name__ == "__main__":
     parser.add_argument('-k', help='Number of ports per switch', default=4)
     parser.add_argument('-L', help='Number of levels this topology has', default=2)
     parser.add_argument('--pickle', help='Topology pickle output path', default=None)
+    parser.add_argument('-s', help='Ignores parameters and runs a small topology with pre-picked switch failures', action='store_true')
     args = parser.parse_args()
-    ab_topo = generate_ab_topology(n_servers=int(args.n_servers), k=int(args.k), L=int(args.L))
+
+    if args.s:
+        k = 12
+        n_servers = 144
+        L = 2
+    else:
+        k = int(args.k)
+        n_servers = int(args.n_servers)
+        L = int(args.L)
+
+    ab_topo = generate_ab_topology(n_servers=n_servers, k=k, L=L)
     if args.pickle:
         with open(args.pickle, 'wb') as f:
             pickle.dump(ab_topo, f)
-    fat_topo = generate_fat_topology(n_servers=int(args.n_servers), k=int(args.k), L=int(args.L))
 
-    fails_map = generate_failed_switches(ab_topo, int(args.k) / 2, int(args.L))
-    res_ab = generate_plot(ab_topo, int(args.n_servers), int(args.k), int(args.L), fails_map, 'ab')
-    res_fat = generate_plot(fat_topo, int(args.n_servers), int(args.k), int(args.L), fails_map, 'fat')
+    fat_topo = generate_fat_topology(n_servers=n_servers, k=k, L=L)
 
-    print res_ab
+    fails_map = predefined_switches if args.s else generate_failed_switches(ab_topo, int(args.k) / 2, int(args.L))
+    #res_ab = generate_plot(ab_topo, n_servers, k, L, fails_map, 'ab')
+    res_fat = generate_plot(ab_topo, n_servers, k, L, fails_map, 'fat')
+
+    #graph(res_ab, res_fat)
+
+    #print res_ab
     print res_fat
-    # generate fat topology
+
