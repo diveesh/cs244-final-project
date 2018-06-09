@@ -244,7 +244,7 @@ def calculate_paths(topo_map, n_servers, failed_switches, total_switches, p, L, 
                 continue
             path = find_path(topo_map, i, j, p, L, failed_switches, tp)
             paths[(i, j)] = len(path)
-        # print 'found all paths starting from host ' + str(i)
+        print 'found all paths starting from host ' + str(i)
     return paths
 
 
@@ -363,7 +363,7 @@ if __name__ == "__main__":
         
 
     ab_topo = generate_ab_topology(n_servers=n_servers, k=k, L=L)
-    #fat_topo = generate_fat_topology(n_servers=n_servers, k=k, L=L)
+    fat_topo = generate_fat_topology(n_servers=n_servers, k=k, L=L)
 
     if not args.s and not args.b:
         fails_map = generate_failed_switches(ab_topo, int(args.k) / 2, int(args.L))
@@ -373,10 +373,10 @@ if __name__ == "__main__":
             pickle.dump(ab_topo, f)
 
     res_ab = generate_plot(ab_topo, n_servers, k, L, fails_map, 'ab')
-    #res_fat = generate_plot(ab_topo, n_servers, k, L, fails_map, 'fat')
-
-    #graph(res_ab, res_fat, args.out)
+    res_fat = generate_plot(ab_topo, n_servers, k, L, fails_map, 'fat')
 
     print res_ab
-    #print res_fat
+    print res_fat
+
+    graph(res_ab, res_fat, args.out)
 
