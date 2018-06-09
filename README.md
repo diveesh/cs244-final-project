@@ -30,7 +30,7 @@ Reproduces Figures 6 and 10 from the F10 NSDI paper located [here](https://www.u
   $ ./setup_project.sh
   ```
 
-  You will need to affirm `Y` for various package installations. The script will install Mininet 2.2.2 from source, as well as `networkx` and `matplotlib`.
+  You will need to affirm `Y` for various package installations. The script will install Mininet 2.2.2 from source, as well as `networkx`, `matplotlib`, `simplejson`, and `iperf3`.
 
   4. Re-generate the results:
 
@@ -38,20 +38,12 @@ Reproduces Figures 6 and 10 from the F10 NSDI paper located [here](https://www.u
   $ sudo ./main.sh
   ```
 
+  The resulting .eps figure image files should appear in the top-level directory.
+
 #### Other
 
 The "full" path inflation (Figure 10) statistics for a complete 24-port AB FatTree topology take quite a long time to generate (~2 hours). The instructions above run a smaller version of the topology, but if you're interested in the complete version and you have some extra time, run the following command:
 
 ```
-$ sudo python main.py --n_servers 1728 -k 24 -L 2 --out result.eps
+$ sudo python main.py -b --out large_fig10.eps
 ```
-
-You can also try out a sample MapReduce application running on our topology (code gratefully sourced from David Maziere's CS240 _last_ spring, where we implemented MapReduce on top of a socket interface). Here are the instructions for that:
-
-```
-$ pwd
-~/cs244-final-project
-$ cd pox/pox/ext/
-$ TODO
-```
-
