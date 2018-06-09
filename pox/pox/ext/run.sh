@@ -1,22 +1,23 @@
 #!/bin/bash
 
 echo "Cleaning files..."
-rm data.out
-rm *.csv
-sudo rmmod tcp_probe
+rm data.out 2>/dev/null
+rm *.csv 2>/dev/null
+sudo rmmod tcp_probe 2>/dev/null
 
 echo
 echo "Installing tcp_probe module..."
 sudo modprobe tcp_probe
 sudo chmod 444 /proc/net/tcpprobe
 
+PWD="$(pwd)"
 # Run 20 second tests like in the F10 paper
 
 echo
 echo "** Running cwnd test(20, 15) with no failed switches **"
 cat /proc/net/tcpprobe > data.out &
 CAT_PID=$!
-sudo python build_topology.py --pickle /home/jeanluc.watson/cs244-final-project/pox/pox/ext/test.pickle
+sudo python build_topology.py --pickle $PWD/test.pickle
 sudo kill $CAT_PID
 echo
 echo "    saving output to 'cwnd.csv'"
@@ -26,7 +27,7 @@ echo
 echo "** Running cwnd test(20, 15) with a failed switch **"
 cat /proc/net/tcpprobe > data.out &
 CAT_FAIL_PID=$!
-sudo python build_topology.py --pickle /home/jeanluc.watson/cs244-final-project/pox/pox/ext/test.pickle --fail_test
+sudo python build_topology.py --pickle $PWD/test.pickle --fail_test
 sudo kill $CAT_FAIL_PID
 echo "    saving output to 'fail_cwnd.csv'"
 echo
@@ -38,7 +39,7 @@ echo
 echo "** Running cwnd test(45, 30) with no failed switches **"
 cat /proc/net/tcpprobe > data.out &
 CAT_PID=$!
-sudo python build_topology.py --pickle /home/jeanluc.watson/cs244-final-project/pox/pox/ext/test.pickle --fail_len 45 --fail_time 30
+sudo python build_topology.py --pickle $PWD/test.pickle --fail_len 45 --fail_time 30
 sudo kill $CAT_PID
 
 echo
@@ -49,7 +50,7 @@ echo
 echo "** Running cwnd test(45, 30) with a failed switch **"
 cat /proc/net/tcpprobe > data.out &
 CAT_FAIL_PID=$!
-sudo python build_topology.py --pickle /home/jeanluc.watson/cs244-final-project/pox/pox/ext/test.pickle --fail_test --fail_len 45 --fail_time 30
+sudo python build_topology.py --pickle $PWD/test.pickle --fail_test --fail_len 45 --fail_time 30
 sudo kill $CAT_FAIL_PID
 echo "    saving output to 'fail_cwnd_long.csv'"
 echo
