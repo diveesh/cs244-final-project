@@ -296,7 +296,7 @@ def graph(ab, fat, o):
 
     plt.figure(1)
     for g in [ab, fat]:
-        plt.subplot(subplt)
+        ax = plt.subplot(subplt)
         plt.xlim(0, 18)
         plt.xticks(range(0, 18, 2))
         plt.yscale('log')
@@ -305,6 +305,12 @@ def graph(ab, fat, o):
         plt.ylabel('CCDF over trials')
         handles = []
         labels = []
+        if g == ab:
+            ax.xaxis.set_label_position('top')
+            ax.set_title('AB FatTree', loc='right')
+        else:
+            ax.xaxis.set_label_position('bottom')
+            ax.set_title('Standard FatTree', loc='right')
         for i in reversed(range(len(f_switches))):
             f = f_switches[i]
             if f == 0:
