@@ -9,12 +9,15 @@ from time import sleep, time
 import copy 
 import numpy as np
 import math
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 
 from topology import generate_ab_topology
 from fat_tree_topology import generate_topology as generate_fat_topology
 
-fail_switches = [0, 5]
+fail_switches = [0, 1, 5, 10, 15]
 
 predefined_switches_small = {
     0: [],
@@ -284,6 +287,7 @@ def generate_failed_switches(topo_map, p, L):
 def graph(ab, fat, o):
     ls = ['-', '--',':', '-.']
     pts = ['rs', 'go', 'bX', 'm+']
+    linefmts = ['r-', 'g--', 'b:', 'm-.']
     ab['limit'] = 10
     fat['limit'] = 16
     subplt = 211
@@ -301,6 +305,8 @@ def graph(ab, fat, o):
         labels = []
         for i in reversed(range(len(fail_switches))):
             f = fail_switches[i]
+            if f == 0:
+                continue
             counts = g[f]
             fac = max([v for k, v in counts.items() if k != 0])
             y_vals = []
